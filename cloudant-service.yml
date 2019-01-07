@@ -1,0 +1,10 @@
+version: '3'
+services:
+  nosetests:
+    environment:
+      - DB_USER
+      - DB_PASSWORD
+      - RUN_CLOUDANT_TESTS=1
+      - SKIP_DB_UPDATES=1
+      - RUN_BASIC_AUTH_TESTS
+      - CLOUDANT_ACCOUNT

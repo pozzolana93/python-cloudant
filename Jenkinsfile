@@ -1,6 +1,9 @@
-def getEnvForSuite(suiteName) {
+def getEnvForSuite(suiteName, pythonVersion) {
   // Base environment variables
   def envVars = [
+    "TEST_SUITE=${suiteName}",
+    "PYTHON_VERSION=${pythonVersion}",
+    'DOCKER_HOST=',
     "CLOUDANT_ACCOUNT=$DB_USER",
     "RUN_CLOUDANT_TESTS=1",
     "SKIP_DB_UPDATES=1" // Disable pending resolution of case 71610
@@ -30,20 +33,16 @@ def setupPythonAndTest(pythonVersion, testSuite) {
     // Set up the environment and test
     withCredentials([usernamePassword(credentialsId: 'clientlibs-test', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD'),
                      string(credentialsId: 'clientlibs-test-iam', variable: 'DB_IAM_API_KEY')]) {
-      withEnv(getEnvForSuite("${testSuite}")) {
+      withEnv(getEnvForSuite("${testSuite}", "${pythonVersion}")) {
         try {
-          sh """
-            virtualenv tmp -p /usr/local/lib/python${pythonVersion}/bin/${pythonVersion.startsWith('3') ? "python3" : "python"}
-            . ./tmp/bin/activate
-            pip install -r requirements.txt
-            pip install -r test-requirements.txt
-            ${'simplejson'.equals(testSuite) ? 'pip install simplejson' : ''}
-            pylint ./src/cloudant
-            nosetests -A 'not db or (db is "cloudant" or "cloudant" in db)' -w ./tests/unit --with-xunit
-          """
+          try {
+              sh "docker-compose -f nosetests.yml -f cloudant-service.yml up --abort-on-container-exit"
+          } finally {
+              sh "docker-compose -f nosetests.yml -f cloudant-service.yml down -v --rmi local"
+          }
         } finally {
           // Load the test results
-          junit 'nosetests.xml'
+          junit 'output/nosetests.xml'
         }
       }
     }
@@ -60,10 +59,9 @@ stage('Checkout'){
 }
 
 stage('Test'){
-  def py2 = '2.7.12'
-  def py3 = '3.5.2'
+  def py3 = 'latest'
   def axes = [:]
-  [py2, py3].each { version ->
+  ['2.7', py3].each { version ->
     ['basic','cookie','iam'].each { auth ->
        axes.put("Python${version}-${auth}", {setupPythonAndTest(version, auth)})
     }
