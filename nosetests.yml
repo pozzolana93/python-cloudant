@@ -1,0 +1,10 @@
+version: '3'
+services:
+  nosetests:
+    build:
+      context: .
+      args:
+        - PYTHON_VERSION=latest
+        - TEST_SUITE=NA
+    volumes:
+      - ./output:/code/output
