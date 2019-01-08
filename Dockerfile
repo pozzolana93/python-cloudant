@@ -11,4 +11,4 @@ VOLUME /code/output
 #ENTRYPOINT ["nosetests"]
 #CMD ["-A 'not db or (db is "cloudant" or "cloudant" in db)' -w ./tests/unit --with-xunit"]
 #CMD pylint ./src/cloudant && nosetests -A not db or (db is "cloudant" or "cloudant" in db)' -w ./tests/unit --with-xunit
-CMD ["sh", "-c", "nosetests -A 'not db or (db is \"cloudant\" or \"cloudant\" in db)' -w ./tests/unit --with-xunit"]
+CMD ["sh", "-c", "nosetests -A 'not db or (db is \"cloudant\" or \"cloudant\" in db)' -w ./tests/unit --with-xunit && mv nosetests.xml ./output/nosetests.xml"]
